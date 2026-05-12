@@ -1,0 +1,98 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: mongodbsearches.mongodb.com
+spec:
+  group: mongodb.com
+  names:
+    plural: mongodbsearches
+    singular: mongodbsearch
+    kind: MongoDBSearch
+    shortNames:
+      - mdbsearch
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                security:
+                  type: object
+                  properties:
+                    tls:
+                      type: object
+                      properties:
+                        certificateKeySecretRef:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            key:
+                              type: string
+                          required: [name]
+                source:
+                  type: object
+                  properties:
+                    cluster:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        username:
+                          type: string
+                        passwordSecretRef:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            key:
+                              type: string
+                          required: [name]
+                      required: [name, username, passwordSecretRef]
+                    external:
+                      type: object
+                      properties:
+                        hostAndPorts:
+                          type: array
+                          items:
+                            type: string
+                        keyfileSecretRef:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            key:
+                              type: string
+                          required: [name]
+                        username:
+                          type: string
+                        passwordSecretRef:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            key:
+                              type: string
+                          required: [name]
+                      required: [hostAndPorts, username, passwordSecretRef]
+                resourceRequirements:
+                  type: object
+                  properties:
+                    limits:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    requests:
+                      type: object
+                      additionalProperties:
+                        type: string
+              required: [security, source, resourceRequirements]
+          required: [spec]
+      subresources:
+        status: {}

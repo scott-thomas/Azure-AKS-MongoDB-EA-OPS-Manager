@@ -1,0 +1,76 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and fill in your actual values
+
+subscription_id     = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Your Azure subscription ID
+resource_group_name = "mongodb-aks-rg"                        # Azure resource group to create
+
+# Resource Tags
+created_by  = "your.name@example.com"  # Who created these resources
+expired_on  = "2026-12-31"             # Expiration date
+environment = "production"
+
+cluster_name              = "aks-mongodb-cluster"
+ops_manager_allowed_cidrs = ["<your-public-ip>/32"]  # Restrict to your IP — do not use 0.0.0.0/0
+
+# Version Configuration
+kubernetes_operator_version = "1.8.0"   # MongoDB Kubernetes Operator Helm chart version
+ops_manager_version         = "8.0.22"  # MongoDB Ops Manager version
+
+# Ops Manager Configuration
+ops_manager_url        = "https://ops-manager.example.com"
+ops_manager_admin_user = "admin"
+ops_manager_api_key    = "your-ops-manager-api-key-here"
+
+# Tenant Configuration
+# Each tenant will get its own namespace: tenant-{tenant_name}
+tenants = {
+  "acme-corp" = {
+    ops_manager_user       = "acme-user"
+    ops_manager_public_key = "acme-public-api-key"
+    ops_manager_org_id     = "acme-org-id"
+    ops_manager_project_id = "acme-project-id"
+    cpu_quota              = "20"
+    memory_quota           = "40Gi"
+    storage_quota          = "200Gi"
+  }
+  
+  "widget-inc" = {
+    ops_manager_user       = "widget-user"
+    ops_manager_public_key = "widget-public-api-key"
+    ops_manager_org_id     = "widget-org-id"
+    ops_manager_project_id = "widget-project-id"
+    cpu_quota              = "10"
+    memory_quota           = "20Gi"
+    storage_quota          = "100Gi"
+  }
+  
+  "example-llc" = {
+    ops_manager_user       = "example-user"
+    ops_manager_public_key = "example-public-api-key"
+    ops_manager_org_id     = "example-org-id"
+    ops_manager_project_id = "example-project-id"
+    # Will use default quotas: cpu=10, memory=20Gi, storage=100Gi
+  }
+  
+  # Example tenant with MongoDB Search enabled
+  "data-analytics" = {
+    ops_manager_user       = "analytics-user"
+    ops_manager_public_key = "analytics-public-api-key"
+    ops_manager_org_id     = "analytics-org-id"
+    ops_manager_project_id = "analytics-project-id"
+    
+    # Increased quotas to accommodate MongoDB + Search pods
+    cpu_quota    = "30"
+    memory_quota = "60Gi"
+    storage_quota = "500Gi"
+    
+    # MongoDB Search Configuration
+    enable_search         = true
+    mongodb_version        = "8.2.6-ent"  # Minimum 8.2.0 required for search
+    mongodb_members       = 3
+    search_cpu_limit      = "4"
+    search_memory_limit   = "8Gi"
+    search_cpu_request    = "3"
+    search_memory_request = "5Gi"
+  }
+}

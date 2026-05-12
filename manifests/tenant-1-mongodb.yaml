@@ -1,0 +1,81 @@
+# manifests/tenant-1-mongodb.yaml
+# MongoDB replica set for Tenant 1
+#
+# Deploy with:
+#   kubectl apply -f manifests/tenant-1-mongodb.yaml
+#
+# MongoDB Search (optional - Preview feature, requires MongoDB Enterprise 8.2.0+):
+#   Search is controlled by a separate manifest so it can be toggled independently.
+#   To ENABLE Search:
+#     1. Ensure TLS is enabled in this file (see tls section below — it is on by default)
+#     2. kubectl apply -f manifests/tenant-1-mongodb-search.yaml
+#   To DISABLE Search:
+#     kubectl delete -f manifests/tenant-1-mongodb-search.yaml
+#     (The MongoDB replica set continues running; only the Search process is removed)
+#
+# TLS prerequisite for Search:
+#   Certs are provisioned by Terraform (modules/cert-manager + modules/tenant-namespace).
+#   Run 'terraform apply' before applying this manifest when enabling Search.
+#   Required secrets/configmaps created by Terraform:
+#     - tenant-1-ca-configmap  (CA bundle for TLS)
+#     - tenant-1-mongodb-cert          (mongod server TLS cert)
+
+apiVersion: mongodb.com/v1
+kind: MongoDB
+metadata:
+  name: tenant-1-mongodb
+  namespace: tenant-1  # Must be in the tenant namespace where the per-tenant operator watches
+spec:
+  # Number of replica set members
+  members: 3
+  
+  # MongoDB version
+  version: "8.2.6-ent"
+  
+  # Type of deployment
+  type: ReplicaSet
+  
+  # Ops Manager configuration
+  opsManager:
+    configMapRef:
+      name: tenant-1-ops-manager-config
+  
+  # Credentials for Ops Manager connection
+  credentials: tenant-1-ops-manager-credentials
+  
+  # Security settings
+  security:
+    authentication:
+      enabled: true
+      modes: ["SCRAM"]
+    # TLS is required when MongoDB Search is enabled.
+    # The CA configmap and server cert are created by Terraform (modules/cert-manager
+    # and modules/tenant-namespace) when enable_search = true in terraform.tfvars.
+    # To disable Search AND TLS together, remove the tls block below and delete
+    # manifests/tenant-1-mongodb-search.yaml if it has been applied.
+    tls:
+      enabled: true
+      # CA bundle configmap — created by Terraform: modules/tenant-namespace (ca_bundle resource)
+      ca: tenant-1-ca-configmap
+  
+  # Persistent storage
+  persistent: true
+  
+  # Storage configuration
+  statefulSet:
+    spec:
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+  
+  # Additional MongoDB configuration
+  additionalMongodConfig:
+    net:
+      port: 27017
+    replication:
+      replSetName: tenant-1-mongodb

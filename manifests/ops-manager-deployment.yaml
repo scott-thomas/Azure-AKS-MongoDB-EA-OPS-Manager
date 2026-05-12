@@ -1,0 +1,35 @@
+# manifests/ops-manager-deployment.yaml
+# Deploy this after the operator is installed
+#
+# kubectl apply -f manifests/ops-manager-deployment.yaml
+#
+# Note: Deploying in 'mongodb' namespace because the operator only watches that namespace
+
+apiVersion: mongodb.com/v1
+kind: MongoDBOpsManager
+metadata:
+  name: ops-manager
+  namespace: opsmanager
+spec:
+  # Ops Manager version
+  version: "8.0.22"
+  
+  # Admin credentials secret (create in mongodb namespace)
+  adminCredentials: ops-manager-admin-secret
+  
+  # Number of Ops Manager replicas
+  replicas: 1
+  
+  # Application database configuration (required)
+  applicationDatabase:
+    members: 3
+    version: "8.2.6"
+    
+  # Configuration for the Ops Manager application  
+  configuration:
+    # Base URL for Ops Manager
+    mms.centralUrl: "http://ops-manager-svc.opsmanager.svc.cluster.local:8080"
+  
+  # External connectivity
+  externalConnectivity:
+    type: LoadBalancer

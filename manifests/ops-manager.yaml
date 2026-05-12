@@ -1,0 +1,11 @@
+apiVersion: mongodb.com/v1
+kind: MongoDBOpsManager
+metadata:
+  name: my-ops-manager
+  namespace: opsmanager
+spec:
+  replicas: 1
+  version: "8.0.22"
+  adminCredentials: "admin-user-secret"
+  externalConnectivity:
+    type: LoadBalancer

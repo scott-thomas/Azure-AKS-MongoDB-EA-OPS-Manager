@@ -1,0 +1,43 @@
+# manifests/tenant-1-mongodb-search.yaml
+# MongoDBSearch custom resource for Tenant 1 (Preview feature)
+#
+# Prerequisites — must exist before applying this file:
+#   1. tenant-1-mongodb replica set is Running (kubectl apply -f manifests/tenant-1-mongodb.yaml)
+#   2. TLS is enabled in tenant-1-mongodb.yaml (tls.enabled: true)
+#   3. Terraform has provisioned:
+#        - tenant-1-search-tls     (Search process TLS cert, in tenant-1 ns)
+#        - search-sync-source-user         (MongoDBUser with searchCoordinator role)
+#        - tenant-1-search-sync-source-password (sync user password secret)
+#      Run: terraform apply  (with enable_search = true for tenant-1 in terraform.tfvars)
+#
+# To ENABLE Search:
+#   kubectl apply -f manifests/tenant-1-mongodb-search.yaml
+#   kubectl get mongodbsearch tenant-1-mongodb -n tenant-1 -w   # wait for Running
+#
+# To DISABLE Search (replica set keeps running):
+#   kubectl delete -f manifests/tenant-1-mongodb-search.yaml
+
+apiVersion: mongodb.com/v1
+kind: MongoDBSearch
+metadata:
+  # Must match the name of the MongoDB resource it is attached to
+  name: tenant-1-mongodb
+  namespace: tenant-1
+spec:
+  # TLS certificate for the mongot (Search) process.
+  # Secret created by Terraform: modules/tenant-namespace (mongodb_search_cert resource)
+  security:
+    tls:
+      certificateKeySecretRef:
+        name: tenant-1-search-tls
+
+  # Resource allocation for the mongot Search process.
+  # Tune based on index size and query volume.
+  # Values below match the tenant-1 configuration in terraform.tfvars.
+  resourceRequirements:
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+    requests:
+      cpu: "1"      # fits on 4-vCPU nodes alongside 3 MongoDB pods; raise if search is under-resourced
+      memory: "2Gi"
