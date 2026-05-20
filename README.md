@@ -1,53 +1,38 @@
 # MongoDB Ops Manager on Azure AKS — Multi-Tenant Deployment with Search (Optional)
 
 ```mermaid
-graph TB
-    classDef dev     fill:#1F2937,color:#fff,stroke:#111827
-    classDef tf      fill:#7B42BC,color:#fff,stroke:#5C2D91
-    classDef infra   fill:#6366F1,color:#fff,stroke:#4338CA
-    classDef ops     fill:#1D4ED8,color:#fff,stroke:#1E40AF
-    classDef operator fill:#059669,color:#fff,stroke:#047857
-    classDef mongo   fill:#00684A,color:#fff,stroke:#004d37
-    classDef search  fill:#D1FAE5,color:#065F46,stroke:#6EE7B7,stroke-dasharray:6 3
+flowchart TB
+    TF(["🔧 Terraform"])
+    DEV(["💻 Developer"])
 
-    DEV(["💻 Developer\nmongosh · Compass"]):::dev
-    TF(["🔧 Terraform\nProvisions all infra"]):::tf
+    subgraph AZURE["☁️ Azure — AKS 4 × Standard_D4s_v3"]
+        CM(["🔒 cert-manager v1.16.2"])
 
-    subgraph AZURE["☁️  Azure"]
-        subgraph AKS["  Kubernetes — AKS  4 × Standard_D4s_v3  "]
-            CM(["🔒 cert-manager v1.16.2\nSelf-signed CA · issues TLS certs"]):::infra
+        subgraph OM["namespace: opsmanager"]
+            GLOB(["🤖 Global Operator v1.8.0"])
+            OMS(["📡 Ops Manager v8.0.22  :8080"])
+        end
 
-            subgraph OM_NS["  namespace: opsmanager  "]
-                GLOBALOP(["🤖 Global Operator v1.8.0\nwatches all namespaces · installs CRDs"]):::operator
-                OPSMGR(["📡 Ops Manager v8.0.22\nLoadBalancer :8080"]):::ops
-            end
+        subgraph T1["namespace: tenant-1"]
+            TOP(["🤖 Tenant Operator"])
+            RS[("🍃 MongoDB RS · v8.2.6-ent · :27017")]
+            SRCH(["🔍 mongot v0.64.0 · Search + Vector Search\n✦ optional ✦"])
+        end
 
-            subgraph AF_NS["  namespace: tenant-1  "]
-                TOP(["🤖 Tenant Operator\nisolated · watches own namespace only"]):::operator
-                RS[("🍃 tenant-1-mongodb\n3-node Replica Set\nv8.2.6-ent · :27017")]:::mongo
-                MONGOT(["🔍 mongot v0.64.0\nSearch · Vector Search\n✦  optional  ✦"]):::search
-            end
-
-            subgraph OT_NS["  namespace: tenant-2 · tenant-3 · …  "]
-                OPx(["🤖 Tenant Operator"]):::operator
-                RSx[("🍃 MongoDB Replica Set\nv8.2.6-ent")]:::mongo
-            end
+        subgraph TN["namespace: tenant-2, tenant-3 …"]
+            RSx[("🍃 MongoDB RS · v8.2.6-ent")]
         end
     end
 
-    TF           ==>|"terraform apply"| AKS
-    DEV          -->|"port-forward :27017"| RS
-    DEV          -->|"Ops Manager UI :8080"| OPSMGR
-    CM           -->|"server cert"| RS
-    CM           -->|"server cert"| RSx
-    GLOBALOP     -->  OPSMGR
-    GLOBALOP     -->  TOP
-    GLOBALOP     -->  OPx
-    TOP          -->  RS
-    TOP          -.->|"kubectl apply\ntenant-1-mongodb-search.yaml"| MONGOT
-    MONGOT       <-.->|"gRPC :27028 + TLS"| RS
-    OPSMGR       -->|"manages"| RS
-    OPSMGR       -->|"manages"| RSx
+    TF    ==>|terraform apply| AZURE
+    DEV   -->|port-forward :27017| RS
+    DEV   -->|UI :8080| OMS
+    CM    -->|TLS certs| RS & RSx
+    GLOB  --> OMS & TOP
+    TOP   --> RS
+    TOP   -.->|kubectl apply| SRCH
+    SRCH  <-.->|gRPC :27028| RS
+    OMS   -->|manages| RS & RSx
 ```
 
 ## What This Deploys
