@@ -1,11 +1,10 @@
 # MongoDB Ops Manager on Azure AKS — Multi-Tenant Deployment with Search (Optional)
 
 ```mermaid
-flowchart TB
+flowchart LR
     TF(["🔧 Terraform"])
-    DEV(["💻 Developer"])
 
-    subgraph AZURE["☁️ Azure — AKS 4 × Standard_D4s_v3"]
+    subgraph AKS["☁️ Azure — AKS  4 × Standard_D4s_v3"]
         CM(["🔒 cert-manager v1.16.2"])
 
         subgraph OM["namespace: opsmanager"]
@@ -15,24 +14,19 @@ flowchart TB
 
         subgraph T1["namespace: tenant-1"]
             TOP(["🤖 Tenant Operator"])
-            RS[("🍃 MongoDB RS · v8.2.6-ent · :27017")]
-            SRCH(["🔍 mongot v0.64.0 · Search + Vector Search\n✦ optional ✦"])
+            RS[("🍃 MongoDB RS\nv8.2.6-ent · :27017")]
+            SRCH(["🔍 mongot v0.64.0\nSearch + Vector  ✦ optional ✦"])
         end
 
-        subgraph TN["namespace: tenant-2, tenant-3 …"]
-            RSx[("🍃 MongoDB RS · v8.2.6-ent")]
-        end
+        MORE["namespace: tenant-2, 3 …\n↳ same pattern"]
     end
 
-    TF    ==>|terraform apply| AZURE
-    DEV   -->|port-forward :27017| RS
-    DEV   -->|UI :8080| OMS
-    CM    -->|TLS certs| RS & RSx
+    TF    ==>|terraform apply| AKS
+    CM    -->|TLS| RS
     GLOB  --> OMS & TOP
     TOP   --> RS
-    TOP   -.->|kubectl apply| SRCH
-    SRCH  <-.->|gRPC :27028| RS
-    OMS   -->|manages| RS & RSx
+    OMS   -->|manages| RS & MORE
+    RS    <-.->|gRPC :27028| SRCH
 ```
 
 ## What This Deploys
